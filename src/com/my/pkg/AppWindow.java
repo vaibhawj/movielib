@@ -12,16 +12,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.Collection;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
@@ -53,8 +51,9 @@ public class AppWindow {
 	private JTable table;
 	private DefaultTableModel model;
 
-	private static final Object[] columnNames = new Object[] { "Location",
-			"File Name", "Size", "Create Date", "File Type", "Movie Seen" };
+	private static final Object[] columnNames = new Object[] { "File Name",
+			"Title", "Size", "Create Date", "File Type", "Movie Seen", "Genre",
+			"Rating" };
 	private JLabel noOfRec;
 	private JLabel lblFileTypes;
 
@@ -98,7 +97,7 @@ public class AppWindow {
 			InputStream in = getClass().getResourceAsStream("img/movlib.png");
 			ImageIcon img = new ImageIcon(ImageIO.read(in));
 			frmMovLib.setIconImage(img.getImage());
-		} catch (IOException e) {
+		} catch (Exception e) {
 			// ignore
 		}
 
@@ -134,8 +133,37 @@ public class AppWindow {
 		lblFileTypes = new JLabel("File Types:");
 		lblFileTypes.setBounds(179, 27, 59, 14);
 		frmMovLib.getContentPane().add(lblFileTypes);
-
 		initFileTypeList();
+
+		initImdbButton();
+
+	}
+
+	/**
+	 * 
+	 */
+	private void initImdbButton() {
+		JButton imdbButton = new JButton();
+		imdbButton
+				.setToolTipText("Click here to fetch rating and other info from IMDb. Make sure Title is correct");
+		try {
+			InputStream in = getClass().getResourceAsStream("img/imdb.png");
+			ImageIcon img = new ImageIcon(ImageIO.read(in));
+			imdbButton.setIcon(img);
+			imdbButton.setOpaque(false);
+			imdbButton.setContentAreaFilled(false);
+			imdbButton.setBorderPainted(false);
+			in = getClass().getResourceAsStream("img/imdb_pressed.png");
+			img = new ImageIcon(ImageIO.read(in));
+			imdbButton.setPressedIcon(img);
+
+		} catch (Exception e) {
+			imdbButton.setText("IMDb");
+
+		}
+		imdbButton.setBounds(723, 11, 46, 23);
+
+		frmMovLib.getContentPane().add(imdbButton);
 
 	}
 
@@ -205,7 +233,6 @@ public class AppWindow {
 		listPane.add(input);
 
 		frmMovLib.getContentPane().add(listPane);
-
 	}
 
 	/**
@@ -324,6 +351,10 @@ public class AppWindow {
 			@Override
 			public boolean isCellEditable(int row, int column) {
 
+				if (1 == column) {
+					return true;
+				}
+
 				return false;
 			}
 		};
@@ -335,6 +366,32 @@ public class AppWindow {
 		// addTableDoubleClickListener();
 
 		addTablePopupMenu();
+
+		Action action = new AbstractAction() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = -580208378121965061L;
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				TableCellListener tcl = (TableCellListener) e.getSource();
+				int viewRow = table.getSelectedRow();
+				int row = table.convertRowIndexToModel(viewRow);
+				String absPath = (String) table.getModel().getValueAt(row, 0);
+				int column = tcl.getColumn();
+				String newValue = ((String) tcl.getNewValue());
+
+				if ("".equals(newValue.trim())) {
+					table.setValueAt(tcl.getOldValue(), row, column);
+				} else {
+					Search.setFileAttribute(absPath, FileInfo.ATTR_TITLE,
+							newValue);
+				}
+			}
+		};
+
+		TableCellListener tcl = new TableCellListener(table, action);
 
 		table.setBounds(10, 122, 759, 296);
 		JScrollPane scrollPane = new JScrollPane();
@@ -358,15 +415,13 @@ public class AppWindow {
 				try {
 					int viewRow = table.getSelectedRow();
 					int row = table.convertRowIndexToModel(viewRow);
-					StringBuilder absPath = new StringBuilder((String) table
-							.getModel().getValueAt(row, 0)).append(
-							FileSystems.getDefault().getSeparator()).append(
-							(String) table.getModel().getValueAt(row, 1));
+					String absPath = (String) table.getModel().getValueAt(row,
+							0);
 
-					String cmd = "explorer.exe /select," + absPath.toString();
+					String cmd = "explorer.exe /select," + absPath;
 					Runtime.getRuntime().exec(cmd);
 				} catch (Exception e1) {
-					showErrorMessage(null);
+					showErrorMessage("Select a row and try again. If error persists contact developer");
 				}
 			}
 		});
@@ -377,42 +432,35 @@ public class AppWindow {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 
-				int viewRow = table.getSelectedRow();
-				int row = table.convertRowIndexToModel(viewRow);
-
-				String movieSeen = ((String) (table.getModel().getValueAt(row,
-						5))).equals(FileInfo.MOVIE_SEEN) ? FileInfo.MOVIE_NOT_SEEN
-						: FileInfo.MOVIE_SEEN;
-
-				StringBuilder absPath = new StringBuilder((String) table
-						.getModel().getValueAt(row, 0)).append(
-						FileSystems.getDefault().getSeparator()).append(
-						(String) table.getModel().getValueAt(row, 1));
-
-				File f = new File(absPath.toString());
-
-				UserDefinedFileAttributeView view = Files.getFileAttributeView(
-						f.toPath(), UserDefinedFileAttributeView.class);
-
-				boolean success = true;
 				try {
-					view.write("user.movieseen", Charset.defaultCharset()
-							.encode(movieSeen));
-				} catch (Exception e1) {
-					success = false;
-				}
+					int viewRow = table.getSelectedRow();
+					int row = table.convertRowIndexToModel(viewRow);
 
-				if (success) {
-					JOptionPane.showMessageDialog(
-							frmMovLib,
-							"Marked Movie Seen as \""
-									+ movieSeen
-									+ "\" for "
-									+ (String) table.getModel().getValueAt(row,
-											1));
-					table.getModel().setValueAt(movieSeen, row, 5);
-				} else {
-					showErrorMessage(null);
+					String movieSeen = ((String) (table.getModel().getValueAt(
+							row, 5))).equals(FileInfo.MOVIE_SEEN) ? FileInfo.MOVIE_NOT_SEEN
+							: FileInfo.MOVIE_SEEN;
+
+					String fileAbsPath = (String) table.getModel().getValueAt(
+							row, 0);
+					String attribute = FileInfo.ATTR_MOVIE_SEEN;
+
+					boolean success = Search.setFileAttribute(
+							fileAbsPath.toString(), attribute, movieSeen);
+
+					if (success) {
+						JOptionPane.showMessageDialog(
+								frmMovLib,
+								"Marked Movie Seen as \""
+										+ movieSeen
+										+ "\" for "
+										+ (String) table.getModel().getValueAt(
+												row, 1));
+						table.getModel().setValueAt(movieSeen, row, 5);
+					} else {
+						showErrorMessage("Select a row and try again. If error persists contact developer");
+					}
+				} catch (Exception e1) {
+					showErrorMessage("Select a row and try again. If error persists contact developer");
 				}
 
 			}
@@ -477,10 +525,11 @@ public class AppWindow {
 	 */
 	private Object[] createResultRow(FileInfo f) {
 
-		// "Location", "File Name", "Size", "Create Date",
-		// "File Type"
+		// "File Name", "Title", "Size", "Create Date", "File Type",
+		// "Movie Seen", "Genre"
 
-		return new Object[] { f.getLocation(), f.getFileName(), f.getSize(),
-				f.getCreateDate(), f.getFileType(), f.getMovieSeen() };
+		return new Object[] { f.getFileName(), f.getTitle(), f.getSize(),
+				f.getCreateDate(), f.getFileType(), f.getMovieSeen(),
+				f.getGenre(), f.getRating() };
 	}
 }

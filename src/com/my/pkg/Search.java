@@ -71,18 +71,34 @@ public class Search {
 
 			fileInfo.setAbsolutePath(absolutePath);
 			// fileInfo.setFile(f);
-			fileInfo.setLocation(f.getParent());
-			fileInfo.setFileName(f.getName());
+			fileInfo.setFileName(absolutePath);
+			fileInfo.setTitle(getTitle(f, ext));
+			fileInfo.setGenre(getFileAttribute(absolutePath,
+					FileInfo.ATTR_GENRE));
+			fileInfo.setRating(getFileAttribute(absolutePath,
+					FileInfo.ATTR_RATING));
+
 			fileInfo.setSize(getFileSize(f));
 			fileInfo.setCreateDate(getCreateDate(f));
 			fileInfo.setFileType(ext.toLowerCase());
-			fileInfo.setMovieSeen(getMovieSeenInfo(f));
+			fileInfo.setMovieSeen(getMovieSeenInfo(absolutePath));
 
 			fileInfos.add(fileInfo);
 		}
 
 		return fileInfos;
 
+	}
+
+	private static String getTitle(File f, String ext) {
+		String title = getFileAttribute(f.getAbsolutePath(),
+				FileInfo.ATTR_TITLE);
+
+		if (null == title || FileInfo.NOT_AVAILABLE.equals(title)) {
+			title = f.getName().split("." + ext)[0];
+		}
+
+		return title;
 	}
 
 	/**
@@ -107,7 +123,7 @@ public class Search {
 	 */
 	private static String getCreateDate(File f) {
 		FileTime createTime = null;
-		String createDateTime = "NA";
+		String createDateTime = FileInfo.NOT_AVAILABLE;
 
 		try {
 			BasicFileAttributes attr = Files.readAttributes(f.toPath(),
@@ -127,21 +143,57 @@ public class Search {
 	/**
 	 * @param f
 	 */
-	private static String getMovieSeenInfo(File f) {
+	private static String getMovieSeenInfo(String fileAbsPath) {
+
+		String attribute = FileInfo.ATTR_MOVIE_SEEN;
+
+		String value = getFileAttribute(fileAbsPath, attribute);
+
+		if (null == value || FileInfo.NOT_AVAILABLE.equals(value)) {
+			value = FileInfo.MOVIE_NOT_SEEN;
+		}
+
+		return value;
+	}
+
+	/**
+	 * @param movieSeen
+	 * @param absPath
+	 * @return
+	 */
+	public static boolean setFileAttribute(String fileAbsPath,
+			String attribute, String value) {
+		File f = new File(fileAbsPath);
+
+		UserDefinedFileAttributeView view = Files.getFileAttributeView(
+				f.toPath(), UserDefinedFileAttributeView.class);
+
+		boolean success = true;
+		try {
+			view.write(attribute, Charset.defaultCharset().encode(value));
+		} catch (Exception e1) {
+			success = false;
+		}
+		return success;
+	}
+
+	/**
+	 * @param movieSeen
+	 * @param absPath
+	 * @return
+	 */
+	public static String getFileAttribute(String fileAbsPath, String attribute) {
+		String value = FileInfo.NOT_AVAILABLE;
+		File f = new File(fileAbsPath);
 		Path file = f.toPath();
 
 		UserDefinedFileAttributeView view = Files.getFileAttributeView(file,
 				UserDefinedFileAttributeView.class);
 
-		String name = "user.movieseen";
-
-		// If seen Yes
-		String value = FileInfo.MOVIE_NOT_SEEN;
-
 		try {
 			ByteBuffer buf = null;
-			buf = ByteBuffer.allocate(view.size(name));
-			view.read(name, buf);
+			buf = ByteBuffer.allocate(view.size(attribute));
+			view.read(attribute, buf);
 			buf.flip();
 			value = Charset.defaultCharset().decode(buf).toString();
 

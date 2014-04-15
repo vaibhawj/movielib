@@ -4,12 +4,17 @@ public class FileInfo {
 
 	final protected static String MOVIE_SEEN = "Yes";
 	final protected static String MOVIE_NOT_SEEN = "No";
+	final protected static String ATTR_MOVIE_SEEN = "user.movieseen";
+	final protected static String ATTR_TITLE = "user.title";
+	final protected static String ATTR_GENRE = "user.genre";
+	final protected static String ATTR_RATING = "user.rating";
+	final protected static String NOT_AVAILABLE = "N/A";
 
 	private String absolutePath;
 
 	// private File file;
 
-	private String location;
+	private String title;
 
 	private String fileName;
 
@@ -21,12 +26,16 @@ public class FileInfo {
 
 	private String movieSeen;
 
-	public String getLocation() {
-		return location;
+	private String genre;
+
+	private String rating;
+
+	public String getTitle() {
+		return title;
 	}
 
-	public void setLocation(String location) {
-		this.location = location;
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	public String getFileName() {
@@ -112,6 +121,22 @@ public class FileInfo {
 
 	public void setMovieSeen(String movieSeen) {
 		this.movieSeen = movieSeen;
+	}
+
+	public String getGenre() {
+		return genre;
+	}
+
+	public void setGenre(String genre) {
+		this.genre = genre;
+	}
+
+	public String getRating() {
+		return rating;
+	}
+
+	public void setRating(String rating) {
+		this.rating = rating;
 	}
 
 }
