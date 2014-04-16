@@ -2,12 +2,14 @@ package com.my.pkg;
 
 public class FileInfo {
 
-	final protected static String MOVIE_SEEN = "Yes";
-	final protected static String MOVIE_NOT_SEEN = "No";
+	final protected static String YES = "Yes";
+	final protected static String NO = "No";
 	final protected static String ATTR_MOVIE_SEEN = "user.movieseen";
 	final protected static String ATTR_TITLE = "user.title";
 	final protected static String ATTR_GENRE = "user.genre";
 	final protected static String ATTR_RATING = "user.rating";
+	final protected static String ATTR_IMDB_DONE = "user.imdb";
+	final protected static String DONE = "Done";
 	final protected static String NOT_AVAILABLE = "N/A";
 
 	private String absolutePath;

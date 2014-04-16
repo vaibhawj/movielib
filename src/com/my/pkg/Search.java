@@ -96,6 +96,7 @@ public class Search {
 
 		if (null == title || FileInfo.NOT_AVAILABLE.equals(title)) {
 			title = f.getName().split("." + ext)[0];
+			setFileAttribute(f.getAbsolutePath(), FileInfo.ATTR_TITLE, title);
 		}
 
 		return title;
@@ -150,7 +151,7 @@ public class Search {
 		String value = getFileAttribute(fileAbsPath, attribute);
 
 		if (null == value || FileInfo.NOT_AVAILABLE.equals(value)) {
-			value = FileInfo.MOVIE_NOT_SEEN;
+			value = FileInfo.NO;
 		}
 
 		return value;

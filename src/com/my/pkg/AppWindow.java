@@ -9,11 +9,10 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,6 +39,10 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+
+import org.apache.commons.io.IOUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 public class AppWindow {
 
@@ -162,6 +165,71 @@ public class AppWindow {
 
 		}
 		imdbButton.setBounds(723, 11, 46, 23);
+
+		imdbButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				frmMovLib.setCursor(Cursor
+						.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+				int rowCount = table.getModel().getRowCount();
+				int row;
+				String title = null;
+				String value = null;
+				String imdbDone = null;
+				for (int i = 0; i < rowCount; i++) {
+					try {
+						row = table.convertRowIndexToModel(i);
+						String absPath = (String) table.getModel().getValueAt(
+								row, 0);
+						imdbDone = Search.getFileAttribute(absPath,
+								FileInfo.ATTR_IMDB_DONE);
+
+						if (null != imdbDone
+								&& !FileInfo.NOT_AVAILABLE.equals(imdbDone)) {
+							// imdb data is alrdy there for
+							continue;
+						}
+
+						title = (String) table.getModel().getValueAt(row, 1);
+
+						URL url = new URL("http://www.omdbapi.com/?t="
+								+ title.trim().replaceAll(" ", "+"));
+
+						URLConnection con = url.openConnection();
+						InputStream in = con.getInputStream();
+						String encoding = con.getContentEncoding();
+						encoding = encoding == null ? "UTF-8" : encoding;
+						String body = IOUtils.toString(in, encoding);
+						JSONObject json = (JSONObject) new JSONParser()
+								.parse(body);
+
+						value = (String) json.get("Response");
+						if ("False".equalsIgnoreCase(value)) {
+							continue;
+						}
+
+						value = (String) json.get("Genre");
+						Search.setFileAttribute(absPath, FileInfo.ATTR_GENRE,
+								value);
+						table.getModel().setValueAt(value, row, 6);
+
+						value = (String) json.get("imdbRating");
+						Search.setFileAttribute(absPath, FileInfo.ATTR_RATING,
+								value);
+						table.getModel().setValueAt(value, row, 7);
+
+						Search.setFileAttribute(absPath,
+								FileInfo.ATTR_IMDB_DONE, FileInfo.DONE);
+
+					} catch (Exception e1) {
+						// ignore and attempt next
+					}
+				}
+				frmMovLib.setCursor(Cursor.getDefaultCursor());
+			}
+		});
 
 		frmMovLib.getContentPane().add(imdbButton);
 
@@ -393,6 +461,7 @@ public class AppWindow {
 
 		TableCellListener tcl = new TableCellListener(table, action);
 
+		table.getTableHeader().setReorderingAllowed(false);
 		table.setBounds(10, 122, 759, 296);
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setViewportView(table);
@@ -437,8 +506,8 @@ public class AppWindow {
 					int row = table.convertRowIndexToModel(viewRow);
 
 					String movieSeen = ((String) (table.getModel().getValueAt(
-							row, 5))).equals(FileInfo.MOVIE_SEEN) ? FileInfo.MOVIE_NOT_SEEN
-							: FileInfo.MOVIE_SEEN;
+							row, 5))).equals(FileInfo.YES) ? FileInfo.NO
+							: FileInfo.YES;
 
 					String fileAbsPath = (String) table.getModel().getValueAt(
 							row, 0);
@@ -485,31 +554,6 @@ public class AppWindow {
 		}
 
 		JOptionPane.showMessageDialog(frmMovLib, str);
-	}
-
-	/**
-	 * 
-	 */
-	private void addTableDoubleClickListener() {
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					JTable target = (JTable) e.getSource();
-					int viewRow = table.getSelectedRow();
-
-					int row = table.convertRowIndexToModel(viewRow);
-					// int column = target.getSelectedColumn();
-
-					StringBuilder absPath = new StringBuilder((String) table
-							.getModel().getValueAt(row, 0)).append(
-							FileSystems.getDefault().getSeparator()).append(
-							(String) table.getModel().getValueAt(row, 1));
-
-					JOptionPane.showMessageDialog(frmMovLib, absPath.toString());
-				}
-			}
-		});
 	}
 
 	/**
