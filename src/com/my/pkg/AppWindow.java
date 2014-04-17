@@ -207,6 +207,17 @@ public class AppWindow {
 
 						value = (String) json.get("Response");
 						if ("False".equalsIgnoreCase(value)) {
+							Search.setFileAttribute(absPath,
+									FileInfo.ATTR_GENRE, FileInfo.NOT_AVAILABLE);
+							table.getModel().setValueAt(FileInfo.NOT_AVAILABLE,
+									row, 6);
+
+							Search.setFileAttribute(absPath,
+									FileInfo.ATTR_RATING,
+									FileInfo.NOT_AVAILABLE);
+							table.getModel().setValueAt(FileInfo.NOT_AVAILABLE,
+									row, 7);
+
 							continue;
 						}
 
@@ -455,6 +466,8 @@ public class AppWindow {
 				} else {
 					Search.setFileAttribute(absPath, FileInfo.ATTR_TITLE,
 							newValue);
+					Search.setFileAttribute(absPath, FileInfo.ATTR_IMDB_DONE,
+							FileInfo.NOT_AVAILABLE);
 				}
 			}
 		};
@@ -466,8 +479,35 @@ public class AppWindow {
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setViewportView(table);
 		scrollPane.setBounds(10, 122, 759, 367);
+
+		Dimension tableSize = scrollPane.getPreferredSize();
+		setColumnsWidth(tableSize);
+
 		frmMovLib.getContentPane().add(scrollPane);
 
+	}
+
+	/**
+	 * @param scrollPane
+	 */
+	private void setColumnsWidth(Dimension tableSize) {
+
+		table.getColumnModel().getColumn(0)
+				.setPreferredWidth(Math.round(tableSize.width * 0.20f));
+		table.getColumnModel().getColumn(1)
+				.setPreferredWidth(Math.round(tableSize.width * 0.40f));
+		table.getColumnModel().getColumn(2)
+				.setPreferredWidth(Math.round(tableSize.width * 0.10f));
+		table.getColumnModel().getColumn(3)
+				.setPreferredWidth(Math.round(tableSize.width * 0.10f));
+		table.getColumnModel().getColumn(4)
+				.setPreferredWidth(Math.round(tableSize.width * 0.10f));
+		table.getColumnModel().getColumn(5)
+				.setPreferredWidth(Math.round(tableSize.width * 0.10f));
+		table.getColumnModel().getColumn(6)
+				.setPreferredWidth(Math.round(tableSize.width * 0.20f));
+		table.getColumnModel().getColumn(7)
+				.setPreferredWidth(Math.round(tableSize.width * 0.06f));
 	}
 
 	/**
