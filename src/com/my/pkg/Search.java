@@ -166,6 +166,10 @@ public class Search {
 			String attribute, String value) {
 		File f = new File(fileAbsPath);
 
+		if (!f.canWrite()) {
+			f.setWritable(true);
+		}
+
 		UserDefinedFileAttributeView view = Files.getFileAttributeView(
 				f.toPath(), UserDefinedFileAttributeView.class);
 
@@ -186,6 +190,11 @@ public class Search {
 	public static String getFileAttribute(String fileAbsPath, String attribute) {
 		String value = FileInfo.NOT_AVAILABLE;
 		File f = new File(fileAbsPath);
+
+		if (!f.canRead()) {
+			f.setReadable(true);
+		}
+
 		Path file = f.toPath();
 
 		UserDefinedFileAttributeView view = Files.getFileAttributeView(file,
